@@ -1,0 +1,34 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Jupyter notebooks checkpoint files
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# VS Code settings
+.vscode/
+*.code-workspace
+
+# Mac system files
+.DS_Store
+
+# Logs and outputs
+*.log
+
+# Compiled binaries or C extensions
+*.so
+
+# Data files (if you're saving any locally)
+*.csv
+*.xlsx
+*.pkl
+*.h5
+
+# OS-level trash
+.Trashes
