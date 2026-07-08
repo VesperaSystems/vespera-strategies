@@ -12,16 +12,12 @@ This repository contains algorithmic trading strategies built from first princip
 
 /vespera-strategies
 │
-├── moving-average-crossover/
-│   ├── strategy.py
-│   ├── backtest.ipynb
-│   └── README.md
-│
-├── momentum-breakout/
-│   └── …
-│
-└── volatility-mean-reversion/
-└── …
+└── moving-average-crossover/
+    ├── strategy.py
+    ├── backtest.py
+    └── README.md
+
+More strategy folders will be added here as they're built — see "Strategies Coming Soon" below for what's planned.
 
 
 Each strategy is documented and version-controlled. You can run everything locally (Python + pip) or use [Google Colab](https://colab.research.google.com/) for instant testing.
@@ -35,7 +31,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cd moving-average-crossover
-python strategy.pyi
+python strategy.py
 ```
 
 ## 🧠 Philosophy
