@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vespera-strategies"
+version = "0.1.0"
+description = "Vespera Systems quant lab — algorithmic trading strategies built from first principles"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.26",
+    "yfinance>=0.2.40",
+    "matplotlib>=3.8",
+    "requests>=2.31",
+]
+
+[project.urls]
+Homepage = "https://vesperasystems.com"
+Repository = "https://github.com/VesperaSystems/vespera-strategies"
+
+[tool.setuptools]
+packages = ["vespera_strategies"]

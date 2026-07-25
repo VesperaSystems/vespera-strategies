@@ -1,15 +1,20 @@
-import pandas as pd
+"""Moving Average Crossover — thin wrapper around the shared package.
 
-def apply_sma_crossover(df, short_window=50, long_window=200):
-    """
-    Adds short and long SMA columns, and generates a Signal column:
-    1 = Buy (Golden Cross), -1 = Sell (Death Cross), 0 = Hold
-    """
-    df['SMA_Short'] = df['Close'].rolling(window=short_window).mean()
-    df['SMA_Long'] = df['Close'].rolling(window=long_window).mean()
+The core logic now lives in vespera_strategies/ma_crossover.py so the
+notebook, this script, and the scheduled runner all share one implementation.
+"""
 
-    df['Signal'] = 0
-    df.loc[df['SMA_Short'] > df['SMA_Long'], 'Signal'] = 1
-    df.loc[df['SMA_Short'] < df['SMA_Long'], 'Signal'] = -1
+import sys
+from pathlib import Path
 
-    return df
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vespera_strategies.ma_crossover import apply_sma_crossover  # noqa: E402,F401
+
+if __name__ == "__main__":
+    from vespera_strategies.ma_crossover import run_ma_crossover
+
+    df, summary = run_ma_crossover("PLTR", start="2019-01-01")
+    print(df[["Close", "SMA_Short", "SMA_Long", "Signal"]].tail(10))
+    print()
+    print("Latest signal:", summary["latest_signal"])

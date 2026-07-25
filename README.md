@@ -12,26 +12,40 @@ This repository contains algorithmic trading strategies built from first princip
 
 /vespera-strategies
 │
-└── moving-average-crossover/
-    ├── strategy.py
-    ├── backtest.py
-    └── README.md
+├── vespera_strategies/          ← shared library (data, metrics, strategies)
+│   ├── data.py                  ← market data fetching (yfinance)
+│   ├── metrics.py               ← Sharpe, CAGR, max drawdown, summaries
+│   ├── ma_crossover.py          ← MA crossover signals + backtest
+│   └── reporting.py             ← push results to Vespera Mission Control
+│
+├── moving-average-crossover/
+│   ├── strategy.ipynb           ← 📓 learning notebook (open in Colab!)
+│   ├── strategy.py
+│   ├── backtest.py              ← CLI: plots + metrics
+│   └── README.md
+│
+├── runner.py                    ← scheduled signal runner (see docs/deployment.md)
+├── Dockerfile                   ← containerized runner for any cloud
+└── pyproject.toml               ← pip-installable, incl. from Colab
 
 More strategy folders will be added here as they're built — see "Strategies Coming Soon" below for what's planned.
 
-
-Each strategy is documented and version-controlled. You can run everything locally (Python + pip) or use [Google Colab](https://colab.research.google.com/) for instant testing.
+Each strategy is documented and version-controlled. The core logic lives in the `vespera_strategies` package so the **same code** powers the notebooks, the CLI scripts, and the scheduled signal runner.
 
 ## 🚀 Getting Started
+
+**Instant (no setup):** open a strategy notebook in Colab, e.g.
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/VesperaSystems/vespera-strategies/blob/main/moving-average-crossover/strategy.ipynb)
+
+**Locally:**
 
 ```bash
 git clone https://github.com/VesperaSystems/vespera-strategies.git
 cd vespera-strategies
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-cd moving-average-crossover
-python strategy.py
+pip install -e . plotly
+python moving-average-crossover/backtest.py --ticker SPY --start 2015-01-01 --charts 1d
 ```
 
 ## 🧠 Philosophy

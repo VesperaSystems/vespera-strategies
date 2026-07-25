@@ -1,60 +1,26 @@
+"""Backtest CLI for the Moving Average Crossover strategy.
+
+Core logic (signals, backtest math, metrics) lives in the shared
+vespera_strategies package; this script adds plotting and a CLI.
+"""
+
 import argparse
-import numpy as np
+import sys
+from pathlib import Path
+
 import pandas as pd
-import yfinance as yf
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
-from mpl_toolkits.mplot3d import Axes3D  # for static 3D
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401  # for static 3D
 import plotly.graph_objs as go
 import plotly.io as pio
 
-from strategy import apply_sma_crossover  # 👈 this is your strategy logic
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-TRADING_DAYS = 252  # typical business days in a year
-
-def sharpe_ratio(returns, rf=0.0, periods=TRADING_DAYS):
-    """
-    Calculate the annualized Sharpe Ratio of a returns series.
-    :param returns: Series of returns (periodic, e.g. daily)
-    :param rf: Annual risk-free rate (decimal)
-    :param periods: Number of periods per year (default 252)
-    :return: Annualized Sharpe Ratio
-    """
-    # convert annual rf to per-period
-    excess = returns - rf / periods
-    mu = excess.mean()
-    sigma = excess.std(ddof=0)
-    return 0.0 if sigma == 0 else (mu / sigma) * np.sqrt(periods)
-
-
-def max_drawdown(equity_curve):
-    """
-    Calculate the maximum drawdown of an equity curve.
-    :param equity_curve: Series of equity values
-    :return: Maximum drawdown (as a percentage)
-    """
-    roll_max = equity_curve.cummax()
-    dd = equity_curve / roll_max - 1.0
-    return dd.min()
-
-
-def fetch_stock_data(ticker, start_date, end_date):
-    df = yf.download(ticker, start=start_date, end=end_date)
-    return df
-
-
-def compute_backtest(df):
-    # Signal must already exist from strategy
-    df = df.copy()
-    if 'Signal' not in df.columns:
-        raise KeyError("DataFrame must contain 'Signal' column from strategy.apply_sma_crossover")
-    df['Position'] = df['Signal'].shift(1).fillna(0)  # act *after* the signal
-    df['Market_Return'] = df['Close'].pct_change().fillna(0)
-    df['Strategy_Return'] = df['Position'] * df['Market_Return']
-    df['Cumulative_Market'] = (1 + df['Market_Return']).cumprod()
-    df['Cumulative_Strategy'] = (1 + df['Strategy_Return']).cumprod()
-    return df
+from vespera_strategies.data import fetch_stock_data  # noqa: E402
+from vespera_strategies.ma_crossover import apply_sma_crossover, compute_backtest  # noqa: E402
+from vespera_strategies.metrics import summarize  # noqa: E402
 
 
 class Plotter:
@@ -154,20 +120,25 @@ class Plotter:
             plt.show()
 
 
-def plot_performance(df, ticker, plotter):
-    # 1D: cumulative returns
-    plotter.plot_time_series(df, ['Cumulative_Market', 'Cumulative_Strategy'], title='Backtest vs Market', ticker=ticker)
-
-    # 2D: price vs volume colored by daily returns
-    if 'Volume' in df.columns:
-        df2 = df.copy()
-        if 'Market_Return' not in df2.columns:
-            df2['Market_Return'] = df2['Close'].pct_change().fillna(0)
-        plotter.plot_2d_scatter(df2, 'Close', 'Volume', color_col='Market_Return', title='Price vs Volume (colored by daily return)', ticker=ticker)
-
-    # 3D: time, price, volume
-    if 'Volume' in df.columns:
-        plotter.plot_3d(df, 'index', 'Close', 'Volume', title='Time vs Price vs Volume', ticker=ticker)
+def print_metrics(df, ticker):
+    """Strategy vs buy-and-hold summary table."""
+    stats = summarize(df)
+    table = pd.DataFrame(stats).rename(
+        index={
+            "total_return": "Total return",
+            "cagr": "CAGR",
+            "sharpe": "Sharpe (ann.)",
+            "max_drawdown": "Max drawdown",
+        },
+        columns={"strategy": "Strategy", "buy_hold": "Buy & Hold"},
+    )
+    formatted = table.copy().astype(object)
+    for row in formatted.index:
+        fmt = "{:.2f}" if row == "Sharpe (ann.)" else "{:.2%}"
+        formatted.loc[row] = [fmt.format(v) for v in table.loc[row]]
+    print(f"\nPerformance — {ticker}")
+    print(formatted.to_string())
+    return stats
 
 
 def main():
@@ -175,12 +146,14 @@ def main():
     parser.add_argument("--ticker", default="PLTR")
     parser.add_argument("--start", default="2015-01-01")
     parser.add_argument("--end", default="2024-01-01")
+    parser.add_argument("--short", type=int, default=50, help="Short SMA window")
+    parser.add_argument("--long", type=int, default=200, help="Long SMA window")
     parser.add_argument("--interactive", action="store_true", help="Use Plotly interactive plotting")
-    parser.add_argument("--charts", choices=['1d', '2d', '3d', 'all'], default='all')
+    parser.add_argument("--charts", choices=['1d', '2d', '3d', 'all', 'none'], default='all')
     args = parser.parse_args()
 
     df = fetch_stock_data(args.ticker, args.start, args.end)
-    df = apply_sma_crossover(df)
+    df = apply_sma_crossover(df, short_window=args.short, long_window=args.long)
     df = compute_backtest(df)
 
     mode = 'interactive' if args.interactive else 'static'
@@ -193,8 +166,9 @@ def main():
     if args.charts in ('3d', 'all') and 'Volume' in df.columns:
         plotter.plot_3d(df, 'index', 'Close', 'Volume', title='Time vs Price vs Volume', ticker=args.ticker)
 
-    # small sample output
+    # small sample output + strategy vs buy-and-hold metrics
     print(df[['Close', 'Signal', 'Position', 'Market_Return', 'Strategy_Return']].tail(10))
+    print_metrics(df, args.ticker)
 
 
 if __name__ == "__main__":

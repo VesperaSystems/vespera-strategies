@@ -1,0 +1,29 @@
+# Daily trade-signal run — the free fallback scheduler.
+# Move this workload to Azure Container Apps Jobs (or a Nebius VM cron)
+# whenever cloud credits land; the container in ./Dockerfile is identical.
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   VESPERA_API_URL — e.g. https://vespera.systems
+#   VESPERA_API_KEY — must match VESPERA_LAB_API_KEY on Mission Control
+name: daily-signals
+
+on:
+  schedule:
+    # 21:30 UTC ≈ after US market close (17:00 ET was 21:00/22:00 UTC depending on DST)
+    - cron: '30 21 * * 1-5'
+  workflow_dispatch: {} # allows "Run now" from the GitHub UI or API
+
+jobs:
+  signals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install .
+      - run: python runner.py
+        env:
+          VESPERA_API_URL: ${{ secrets.VESPERA_API_URL }}
+          VESPERA_API_KEY: ${{ secrets.VESPERA_API_KEY }}

@@ -1,5 +1,7 @@
 # Moving Average Crossover Strategy
 
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/VesperaSystems/vespera-strategies/blob/main/moving-average-crossover/strategy.ipynb)
+
 ## 📈 Summary
 
 A trend-following strategy based on the crossover of two Simple Moving Averages (SMA).
@@ -42,11 +44,12 @@ Where:
 
 | Component           | Status      |
 |---------------------|-------------|
-| Strategy logic      | ✅ Implemented |
-| Signal generation   | ✅ Implemented |
+| Strategy logic      | ✅ Shared module: `vespera_strategies/ma_crossover.py` |
+| Signal generation   | ✅ Implemented, incl. crossover event detection |
 | Backtesting engine  | ✅ Basic cumulative returns via `.cumprod()` |
 | Visualisation       | ✅ Signals + price chart |
-| Performance metrics | ❌ Coming next (sharpe, drawdown, etc) |
+| Performance metrics | ✅ Sharpe, CAGR, max drawdown, buy-and-hold benchmark |
+| Learning notebook   | ✅ `strategy.ipynb` (Colab badge above) |
 
 ---
 
@@ -62,18 +65,32 @@ Where:
 
 ## 🧪 How to Run
 
+**Zero setup:** click the Colab badge at the top of this README.
+
+**Locally:**
+
 ```bash
-pip install pandas matplotlib yfinance
-python3 strategy.py
+# from the repo root
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e . plotly
+python moving-average-crossover/backtest.py --ticker AAPL --start 2018-01-01 --charts 1d
 ```
+
+Or use the library directly:
+
+```python
+from vespera_strategies import run_ma_crossover
+df, summary = run_ma_crossover("SPY", start="2015-01-01")
+print(summary["metrics"], summary["latest_signal"])
+```
+
 ---
 
 ## 📘 Next Steps
-- Add proper backtest.py for trade simulation and PnL
-- Compare with a buy-and-hold benchmark
 - Introduce short-side logic (Death Cross → short)
-- Apply to other tickers
-- Wrap into a reusable function/class
+- Add slippage and trading fees to the backtest
+- Volume confirmation for signals
+- Parameter sweep: which SMA windows hold up across tickers?
 
 ---
 
